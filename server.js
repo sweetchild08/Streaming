@@ -7,12 +7,16 @@ const {EVENTS} = require('@tus/server');
 const { encode } = require('./Helper/helper');
 
 const app = express()
+// allow all origin
 app.use(cors());
-const uploadApp = express()
+
+// tus server configuration
 const server = new Server({
     path: '/files',
     datastore: new FileStore({ directory: './files' })
 })
+
+// event handling for upload finish
 server.on(EVENTS.POST_FINISH, (req, res, upload) => {
     console.log(upload)
     encode(upload.id)
@@ -32,12 +36,16 @@ app.get('/files', (req, res) => {
     });
   });
 
-
+// uploading file
+const uploadApp = express()
 uploadApp.all('*', server.handle.bind(server))
-app.use('/uploads', (req,res)=>{
-    uploadApp(req,res)
-})
+app.use('/uploads',uploadApp)
 
 app.listen(3000, function () {
     console.log('Listening on port 3000!')
   })
+
+
+//   references
+// express with tus
+// https://github.com/tus/tus-node-server/tree/main/packages/server#events
