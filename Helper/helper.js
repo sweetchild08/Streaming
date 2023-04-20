@@ -3,8 +3,8 @@ const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
 
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 
-module.exports.encode=(filename)=>{
-    ffmpeg(`./files/${filename}`, { timeout: 432000 }).addOptions([
+module.exports.encode = (filename) => {
+    ffmpeg(`./watermarked/${filename}.mp4`, { timeout: 432000 }).addOptions([
         '-profile:v baseline',
         '-level 3.0',
         '-start_number 0',
