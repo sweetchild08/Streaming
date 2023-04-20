@@ -1,11 +1,23 @@
-const {Server} = require('@tus/server')
-const {FileStore} = require('@tus/file-store')
+const { Server } = require('@tus/server')
+const { FileStore } = require('@tus/file-store')
 const express = require('express')
 const cors = require('cors');
 const fs = require('fs');
+const mongoose = require('mongoose');
 
-const {EVENTS} = require('@tus/server');
+require('dotenv').config();
+
+const { EVENTS } = require('@tus/server');
 const { encode } = require('./Helper/helper');
+const Uploads = require('./Models/Uploads')
+
+mongoose.connect(process.env.MONGOURLSTRING, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => {
+    console.log('Connected to MongoDB!');
+  })
+  .catch((err) => {
+    console.error('Error connecting to MongoDB:', err);
+  });
 
 // const Sentry = require("@sentry/node");
 const Sentry = require('@sentry/node');
@@ -40,34 +52,35 @@ app.use(cors());
 
 // tus server configuration
 const server = new Server({
-    path: '/files',
-    datastore: new FileStore({ directory: './files' })
+  path: '/files',
+  datastore: new FileStore({ directory: './files' })
 })
 
 // event handling for upload finish
-server.on(EVENTS.POST_FINISH, (req, res, upload) => {
-    console.log(upload)
-    encode(upload.id)
+server.on(EVENTS.POST_FINISH, async(req, res, upload) => {
+  console.log(upload)
+  await Uploads.create(upload)
+  encode(upload.id)
 })
 
 // Define a route to get a list of uploaded files
 app.get('/files', (req, res) => {
-    // Read the contents of the uploads directory
-    fs.readdir('./files', (err, files) => {
-      if (err) {
-        console.error(err);
-        return res.status(500).send('Error reading files');
-      }
-  
-      // Send the list of files as JSON
-      res.json({files});
-    });
+  // Read the contents of the uploads directory
+  fs.readdir('./files', (err, files) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).send('Error reading files');
+    }
+
+    // Send the list of files as JSON
+    res.json({ files });
   });
+});
 
 // uploading file
 const uploadApp = express()
 uploadApp.all('*', server.handle.bind(server))
-app.use('/uploads',uploadApp)
+app.use('/uploads', uploadApp)
 
 // The error handler must be before any other error middleware and after all controllers
 app.use(Sentry.Handlers.errorHandler());
@@ -80,8 +93,8 @@ app.use(function onError(err, req, res, next) {
 });
 
 app.listen(3000, function () {
-    console.log('Listening on port 3000!')
-  })
+  console.log('Listening on port 3000!')
+})
 
 
 //   references
