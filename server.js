@@ -8,7 +8,7 @@ const mongoose = require('mongoose');
 require('dotenv').config();
 
 const { EVENTS } = require('@tus/server');
-const { encode } = require('./Helper/helper');
+const { encode, createVideoWatermark } = require('./Helper/helper');
 const Uploads = require('./Models/Uploads')
 
 mongoose.connect(process.env.MONGOURLSTRING, { useNewUrlParser: true, useUnifiedTopology: true })
@@ -60,7 +60,11 @@ const server = new Server({
 server.on(EVENTS.POST_FINISH, async(req, res, upload) => {
   console.log(upload)
   await Uploads.create(upload)
-  encode(upload.id)
+  // encode(upload.id)
+  createVideoWatermark(upload.id)
+  .then(()=>{
+    encode(upload.id)
+  })
 })
 
 // Define a route to get a list of uploaded files
